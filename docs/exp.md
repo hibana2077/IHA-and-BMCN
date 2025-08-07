@@ -78,24 +78,12 @@ All metrics are computed on the official **val** split. In addition, log **per�
 
 ---
 
-## 7. Reproducibility Checklist
+<!-- ## 7. Reproducibility Checklist -->
 
-* [x] Fixed seeds & deterministic CuDNN.
-* [x] Log git commit hash + `pip freeze`.
-* [x] Upload all YAML configs & scripts alongside results.
-* [x] Provide Colab notebook for sanity‑check run on Cotton80.
-
----
-
-## 8. Timeline
-
-| Phase                     | Duration |
-| ------------------------- | -------- |
-| Baseline training (B0,B1) | 2 days   |
-| Proposal variants (P1‑P5) | 4 days   |
-| Ablations (A1‑A3)         | 2 days   |
-| Sweeps & analysis         | 3 days   |
-| Final write‑up            | 1 day    |
+<!-- * [x] Fixed seeds & deterministic CuDNN. -->
+<!-- * [x] Log git commit hash + `pip freeze`. -->
+<!-- * [x] Upload all YAML configs & scripts alongside results. -->
+<!-- * [x] Provide Colab notebook for sanity‑check run on Cotton80. -->
 
 ---
 
