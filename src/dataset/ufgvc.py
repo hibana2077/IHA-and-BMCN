@@ -166,6 +166,7 @@ class UFGVCDataset(Dataset):
             print(f"Samples: {len(self.data)}")
             print(f"Classes: {len(self.classes)}")
             print(f"Class names: {self.classes}")
+            print(f"Class to index mapping: {self.class_to_idx}")
             
         except Exception as e:
             raise RuntimeError(f"Failed to load dataset {self.dataset_name}: {e}")
