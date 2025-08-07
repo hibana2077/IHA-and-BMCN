@@ -88,9 +88,9 @@ def get_transforms(config: Config, model):
     train_transform = timm.data.create_transform(
         **data_cfg,
         is_training=True,
-        auto_augment=config.data.augmentation.auto_augment,
-        re_prob=config.data.augmentation.re_prob,
-        color_jitter=config.data.augmentation.color_jitter
+        # auto_augment=config.data.augmentation.auto_augment,
+        # re_prob=config.data.augmentation.re_prob,
+        # color_jitter=config.data.augmentation.color_jitter
     )
     
     val_transform = timm.data.create_transform(
