@@ -73,8 +73,6 @@ def create_model(config: Config, num_classes: int):
         pretrained=config.model.pretrained,
         num_classes=num_classes,
     )
-    # change the model head's norm_layer
-    model.norm = norm_layer
     
     return model
 
