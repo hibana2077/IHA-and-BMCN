@@ -198,7 +198,7 @@ def train_epoch(model, train_loader, optimizer, scheduler, criterion, device, ep
         # Forward pass
         outputs = model(inputs)
         loss = criterion(outputs, targets)
-        loss = torch.clamp(loss, max=100)
+        # loss = torch.clamp(loss, max=100)
         
         # Backward pass
         optimizer.zero_grad()
