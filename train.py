@@ -410,7 +410,7 @@ def main():
     print(f"\nBest validation accuracy: {best_acc:.2f}% at epoch {best_epoch}")
     
     # Load best model for test evaluation
-    best_checkpoint = torch.load(output_dir / 'best_checkpoint.pth')
+    best_checkpoint = torch.load(output_dir / 'best_checkpoint.pth', weights_only=False)
     model.load_state_dict(best_checkpoint['model_state_dict'])
     
     test_loss, test_metrics = validate(model, test_loader, criterion, device, metrics_calc)
