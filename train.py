@@ -72,10 +72,9 @@ def create_model(config: Config, num_classes: int):
         model_name,
         pretrained=config.model.pretrained,
         num_classes=num_classes,
-        # act_layer=act_layer,
-        # act_layer=nn.GELU(),
-        # norm_layer=norm_layer
     )
+    # change the model head's norm_layer and act_layer
+    model.norm = norm_layer
     
     return model
 
