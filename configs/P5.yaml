@@ -28,7 +28,7 @@ training:
   batch_size: 16
   epochs: 200
   grad_clip: 10.0
-  learning_rate: 1.0e-3
+  learning_rate: 1.0e-4
   output_dir: ./outputs
   seed: 42
   warmup_ratio: 0.05
