@@ -27,7 +27,7 @@ model:
 training:
   batch_size: 16
   epochs: 50
-  grad_clip: 5.0
+  grad_clip: 10.0
   learning_rate: 1.0e-4
   output_dir: ./outputs
   seed: 42
