@@ -16,4 +16,4 @@ source /scratch/rp06/sl5952/IHA-and-BMCN/.venv/bin/activate
 
 cd ..
 # Run training with IHA and BMCN models
-python train.py --config configs/cotton80_convnext_tiny.yaml >> out_train_a100.txt
+python train.py --config configs/P5.yaml >> out_train_a100.txt

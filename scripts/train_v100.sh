@@ -4,7 +4,7 @@
 #PBS -l ngpus=1            
 #PBS -l ncpus=12            
 #PBS -l mem=20GB           
-#PBS -l walltime=00:33:00  
+#PBS -l walltime=00:60:00  
 #PBS -l wd                  
 #PBS -l storage=scratch/rp06
 
@@ -16,4 +16,5 @@ source /scratch/rp06/sl5952/IHA-and-BMCN/.venv/bin/activate
 
 cd ..
 # Run training with IHA and BMCN models
-python train.py --config configs/cotton80_resnet18.yaml >> out_train_v100.txt
+python train.py --config configs/P5.yaml >> out_train_a100.txt
+
