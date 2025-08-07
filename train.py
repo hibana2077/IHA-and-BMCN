@@ -73,7 +73,7 @@ def create_model(config: Config, num_classes: int):
         pretrained=config.model.pretrained,
         num_classes=num_classes,
         # act_layer=act_layer,
-        act_layer=nn.GELU(inplace=True),
+        act_layer=nn.GELU(),
         norm_layer=norm_layer
     )
     
@@ -243,7 +243,7 @@ def validate(model, val_loader, criterion, device, metrics_calc=None):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = model(inputs)
             loss = criterion(outputs, targets)
-            loss = torch.clamp(loss, max=100)
+            # loss = torch.clamp(loss, max=100)
 
             total_loss.append(loss.item())
             all_outputs.append(outputs.cpu())
