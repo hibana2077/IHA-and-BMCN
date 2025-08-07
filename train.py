@@ -73,8 +73,8 @@ def create_model(config: Config, num_classes: int):
         pretrained=config.model.pretrained,
         num_classes=num_classes,
         # act_layer=act_layer,
-        act_layer=nn.GELU(),
-        norm_layer=norm_layer
+        # act_layer=nn.GELU(),
+        # norm_layer=norm_layer
     )
     
     return model
