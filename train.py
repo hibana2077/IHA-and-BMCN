@@ -31,15 +31,97 @@ def set_seed(seed: int = 42):
     torch.backends.cudnn.benchmark = False
 
 
+def replace_last_stage_layers(model, act_layer_fn=None, norm_layer_fn=None):
+    """Replace norm and activation layers only in the last stage of the model"""
+    model_name = model.__class__.__name__.lower()
+    
+    if 'resnet' in model_name:
+        # For ResNet models, replace in layer4 (last stage)
+        if hasattr(model, 'layer4'):
+            for block in model.layer4:
+                if hasattr(block, 'act1') and act_layer_fn:
+                    block.act1 = act_layer_fn(inplace=False)
+                if hasattr(block, 'act2') and act_layer_fn:
+                    block.act2 = act_layer_fn(inplace=False)
+                if hasattr(block, 'bn1') and norm_layer_fn:
+                    num_features = block.bn1.num_features
+                    block.bn1 = norm_layer_fn(num_features)
+                if hasattr(block, 'bn2') and norm_layer_fn:
+                    num_features = block.bn2.num_features
+                    block.bn2 = norm_layer_fn(num_features)
+                # Handle downsample normalization if exists
+                if hasattr(block, 'downsample') and block.downsample is not None:
+                    for i, layer in enumerate(block.downsample):
+                        if isinstance(layer, (nn.BatchNorm2d, nn.LayerNorm)) and norm_layer_fn:
+                            num_features = layer.num_features
+                            block.downsample[i] = norm_layer_fn(num_features)
+    
+    elif 'swin' in model_name or 'vit' in model_name:
+        # For Vision Transformers, replace in the last stage
+        if hasattr(model, 'layers') and len(model.layers) > 0:
+            last_stage = model.layers[-1]  # Get last stage
+            
+            # Replace in all blocks of the last stage
+            if hasattr(last_stage, 'blocks'):
+                for block in last_stage.blocks:
+                    # Replace norm layers
+                    if hasattr(block, 'norm1') and norm_layer_fn:
+                        num_features = block.norm1.normalized_shape[0] if hasattr(block.norm1, 'normalized_shape') else block.norm1.num_features
+                        block.norm1 = norm_layer_fn(num_features)
+                    if hasattr(block, 'norm2') and norm_layer_fn:
+                        num_features = block.norm2.normalized_shape[0] if hasattr(block.norm2, 'normalized_shape') else block.norm2.num_features
+                        block.norm2 = norm_layer_fn(num_features)
+                    
+                    # Replace activation in MLP
+                    if hasattr(block, 'mlp') and hasattr(block.mlp, 'act') and act_layer_fn:
+                        block.mlp.act = act_layer_fn(inplace=False)
+            
+            # Replace norm in downsample if exists
+            if hasattr(last_stage, 'downsample') and last_stage.downsample is not None:
+                if hasattr(last_stage.downsample, 'norm') and norm_layer_fn:
+                    num_features = last_stage.downsample.norm.normalized_shape[0] if hasattr(last_stage.downsample.norm, 'normalized_shape') else last_stage.downsample.norm.num_features
+                    last_stage.downsample.norm = norm_layer_fn(num_features)
+    
+    else:
+        print(f"Warning: Model type {model_name} not specifically supported for last stage replacement")
+        # For other models, try a generic approach
+        modules_to_replace = []
+        for name, module in model.named_modules():
+            # Try to identify last stage layers by name patterns
+            if any(pattern in name for pattern in ['stage4', 'layer4', 'layers.3', 'blocks.-1']):
+                if isinstance(module, (nn.ReLU, nn.GELU, nn.SiLU)) and act_layer_fn:
+                    modules_to_replace.append((name, 'act', act_layer_fn(inplace=False)))
+                elif isinstance(module, (nn.BatchNorm2d, nn.LayerNorm)) and norm_layer_fn:
+                    num_features = module.num_features if hasattr(module, 'num_features') else module.normalized_shape[0]
+                    modules_to_replace.append((name, 'norm', norm_layer_fn(num_features)))
+        
+        # Apply replacements
+        for name, layer_type, new_layer in modules_to_replace:
+            parent_name = '.'.join(name.split('.')[:-1])
+            layer_name = name.split('.')[-1]
+            if parent_name:
+                parent_module = dict(model.named_modules())[parent_name]
+                setattr(parent_module, layer_name, new_layer)
+            else:
+                setattr(model, layer_name, new_layer)
+
+
 def create_model(config: Config, num_classes: int):
-    """Create model with IHA and BMCN layers"""
+    """Create model with IHA and BMCN layers only in the last stage"""
     model_name = config.model.name
     
-    # Determine act_layer and norm_layer based on experiment variant
-    act_layer = None
-    norm_layer = None
-    
     variant = config.experiment.variant
+    
+    # Create base model first
+    model = timm.create_model(
+        model_name,
+        pretrained=config.model.pretrained,
+        num_classes=num_classes,
+    )
+    
+    # Prepare replacement functions for last stage only
+    act_layer_fn = None
+    norm_layer_fn = None
     
     if variant in ['P1', 'P2', 'P4', 'P5', 'A1', 'A2', 'A3']:
         # Use IHA activation
@@ -47,7 +129,7 @@ def create_model(config: Config, num_classes: int):
         kappa_init = config.model.iha.kappa_init
         if variant == 'A1':
             kappa_init = 0.0  # Degenerate to linear
-        act_layer = iha_act_layer(kappa_init=kappa_init, per_channel=per_channel)
+        act_layer_fn = iha_act_layer(kappa_init=kappa_init, per_channel=per_channel)
     
     if variant in ['P3', 'P4', 'P5', 'A1', 'A2', 'A3']:
         # Use BMCN normalization
@@ -60,19 +142,15 @@ def create_model(config: Config, num_classes: int):
         
         # Determine if it's a ViT (channel_last) or CNN
         is_vit = 'vit' in model_name.lower() or 'swin' in model_name.lower()
-        norm_layer = bmcn_norm_layer(
+        norm_layer_fn = bmcn_norm_layer(
             eps=config.model.bmcn.eps,
             momentum=momentum,
             affine=affine,
             channel_last=is_vit
         )
     
-    # Create model
-    model = timm.create_model(
-        model_name,
-        pretrained=config.model.pretrained,
-        num_classes=num_classes,
-    )
+    # Replace layers only in the last stage
+    replace_last_stage_layers(model, act_layer_fn, norm_layer_fn)
     
     return model
 
