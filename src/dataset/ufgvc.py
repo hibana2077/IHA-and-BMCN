@@ -150,14 +150,22 @@ class UFGVCDataset(Dataset):
                 raise ValueError(f"No data found for split '{self.split}'. Available splits: {available_splits}")
             
             # Get unique classes and create label mapping
-            self.classes = sorted(self.data['class_name'].unique())
+            # Handle numerical class names properly
+            unique_classes = self.data['class_name'].unique()
+            try:
+                # Try to sort numerically if all class names are numeric
+                self.classes = sorted(unique_classes, key=int)
+            except ValueError:
+                # Fall back to string sorting if not all numeric
+                self.classes = sorted(unique_classes)
+            
             self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
             
             print(f"Dataset: {self.dataset_name}")
             print(f"Split: {self.split}")
             print(f"Samples: {len(self.data)}")
             print(f"Classes: {len(self.classes)}")
-            print(f"Class names: {self.classes[:10]}{'...' if len(self.classes) > 10 else ''}")
+            print(f"Class names: {self.classes}")
             
         except Exception as e:
             raise RuntimeError(f"Failed to load dataset {self.dataset_name}: {e}")
@@ -179,8 +187,9 @@ class UFGVCDataset(Dataset):
         except Exception as e:
             raise RuntimeError(f"Failed to load image at index {idx}: {e}")
         
-        # Get label
-        label = int(row['label'])
+        # Get label - use class_name to ensure consistency with self.classes
+        class_name = row['class_name']
+        label = self.class_to_idx[class_name]
         
         # Apply transforms
         if self.transform:
