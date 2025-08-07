@@ -22,7 +22,7 @@ model:
     eps: 1.0e-05
     kappa_init: 0.05
     per_channel: true
-  name: swin_tiny_patch4_window7_224
+  name: swin_tiny_patch4_window7_224.ms_in22k_ft_in1k
   pretrained: true
 training:
   batch_size: 16
