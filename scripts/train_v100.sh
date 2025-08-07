@@ -12,8 +12,8 @@ module load cuda/12.6.2
 # module load python3/3.10.4
 
 nvidia-smi >> gpu-info-v100.txt
-source /scratch/rp06/sl5952/SHOP/.venv/bin/activate
+source /scratch/rp06/sl5952/IHA-and-BMCN/.venv/bin/activate
 
 cd ..
-# Run training
+# Run training with IHA and BMCN models
 python train.py --config configs/cotton80_resnet18.yaml >> out_train_v100.txt

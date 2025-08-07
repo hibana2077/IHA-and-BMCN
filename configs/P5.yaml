@@ -1,0 +1,35 @@
+data:
+  augmentation:
+    auto_augment: rand-m9-mstd0.5-inc1
+    color_jitter: 0.4
+    re_prob: 0.25
+  dataset_name: cotton80
+  num_workers: 4
+  root: ./data
+experiment:
+  notes: "IHA (per-channel \u03BA) + BMCN"
+  project_name: IHA-BMCN-UFGVC
+  tags:
+  - P5
+  - cotton80
+  variant: P5
+model:
+  bmcn:
+    affine: true
+    eps: 1.0e-05
+    momentum: 0.1
+  iha:
+    eps: 1.0e-05
+    kappa_init: 0.05
+    per_channel: true
+  name: swin_tiny_patch4_window7_224
+  pretrained: true
+training:
+  batch_size: 16
+  epochs: 50
+  grad_clip: 5.0
+  learning_rate: 1.0e-4
+  output_dir: ./outputs
+  seed: 42
+  warmup_ratio: 0.05
+  weight_decay: 0.05

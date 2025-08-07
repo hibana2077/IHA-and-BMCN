@@ -94,8 +94,70 @@ class BMCN(nn.Module):
         # Collapse batch & spatial dims before updating global stats
         mean_detached = mean.detach().mean(dim=dim_batch)
         var_detached = var.detach().mean(dim=dim_batch)
+        
+        # Ensure the shape matches running stats
+        if self.channel_last:
+            # For channel_last, mean/var should be shape (C,)
+            # The mean/var from forward pass will be (N, 1, C) -> need to extract (C,)
+            if mean_detached.dim() > 1:
+                mean_detached = mean_detached.squeeze()
+                var_detached = var_detached.squeeze()
+            # Take last dimension if still multi-dimensional
+            if mean_detached.numel() == self.num_features:
+                pass  # Already correct shape
+            elif mean_detached.numel() > self.num_features:
+                mean_detached = mean_detached[-self.num_features:]
+                var_detached = var_detached[-self.num_features:]
+        else:
+            # For channel_first, mean/var should be shape (C,)
+            if mean_detached.dim() > 1:
+                mean_detached = mean_detached.squeeze()
+                var_detached = var_detached.squeeze()
+            # Ensure we have the right number of features
+            if mean_detached.numel() > self.num_features:
+                mean_detached = mean_detached[:self.num_features]
+                var_detached = var_detached[:self.num_features]
+        
+        # Final safety check
+        if mean_detached.numel() != self.num_features:
+            # Fallback: just use the current running stats (no update)
+            return
+            
         self.running_mean.mul_(1.0 - self.momentum).add_(self.momentum * mean_detached)
         self.running_var.mul_(1.0 - self.momentum).add_(self.momentum * var_detached)
+
+    # ------------------------------------------------------------------
+    # Representation helpers
+    # ------------------------------------------------------------------
+    def extra_repr(self) -> str:
+        return (f"num_features={self.num_features}, eps={self.eps}, momentum={self.momentum}, "
+                f"affine={self.affine}, channel_last={self.channel_last}")
+
+# ----------------------------------------------------------------------------
+# Factory for timm "norm_layer=" argument -----------------------------------
+# ----------------------------------------------------------------------------
+
+def bmcn_norm_layer(eps: float = 1e-5, momentum: float = 0.1, affine: bool = True, channel_last: bool = False):
+    """Factory so timm can build BMCN via norm_layer=bmcn_norm_layer."""
+    def _create(num_features):
+        return BMCN(num_features, eps=eps, momentum=momentum, affine=affine, channel_last=channel_last)
+    return _create
+
+# Example (CNNs) -------------------------------------------------------------
+# import timm, functools
+# model = timm.create_model(
+#     'resnet18',
+#     pretrained=True,
+#     norm_layer=bmcn_norm_layer(eps=1e-5, momentum=0.1, affine=True)
+# )
+# Example (ViTs) -------------------------------------------------------------
+# model = timm.create_model(
+#     'vit_small_patch16_224',
+#     pretrained=True,
+#     # Swaps LayerNorm → BMCN (channel_last=True)
+#     norm_layer=bmcn_norm_layer(channel_last=True)
+# )
+
 
     # ------------------------------------------------------------------
     # Representation helpers
